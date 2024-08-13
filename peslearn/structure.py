@@ -1,5 +1,6 @@
 import numpy as np
 from ase import Atoms
+from ase.io import read
 from ase.md.velocitydistribution import (
     MaxwellBoltzmannDistribution,
     Stationary,
@@ -7,6 +8,7 @@ from ase.md.velocitydistribution import (
 )
 
 __all__ = [
+    "get_structure",
     "set_velocities_",
     "rotate_to_upper_triangular_cell_",
     "cell_is_upper_triangular",
@@ -14,18 +16,25 @@ __all__ = [
 ]
 
 
-def set_velocities_(atoms: Atoms, temp_K: float, overwrite=False) -> None:
+def get_structure(path: str) -> Atoms:
+    """
+    Read the structure from the given path.
+    """
+    atoms = read(path)
+    return atoms
+
+
+def set_velocities_(
+    atoms: Atoms, temp_K: float, random_seed: int | None = None
+) -> None:
     """
     Set the velocities of the atoms to a Maxwell-Boltzmann
-    distribution at the given temperature. If the velocities
-    are already set, they are not overwritten unless the
-    `overwrite` flag is set to True.
+    distribution at the given temperature.
     """
-    vel_ini = atoms.get_velocities()
-    if np.allclose(vel_ini, 0) or overwrite:
-        MaxwellBoltzmannDistribution(atoms, temperature_K=temp_K)
-        Stationary(atoms)
-        ZeroRotation(atoms)
+    rng = None if random_seed is None else np.random.RandomState(random_seed)
+    MaxwellBoltzmannDistribution(atoms, temperature_K=temp_K, rng=rng)
+    Stationary(atoms)
+    ZeroRotation(atoms)
 
 
 def rotate_to_upper_triangular_cell_(atoms: Atoms) -> None:
